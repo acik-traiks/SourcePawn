@@ -13,7 +13,7 @@ public Plugin:myinfo =
 	version = "16.07.2014"
 };
 
-/* ---------- Define Variables ---------- */
+/* ---------- Id Event ---------- */
 #define FIRST 0
 #define HEAD 1
 #define KNIFE 2
@@ -43,6 +43,8 @@ public Plugin:myinfo =
 #define KS_13 26
 #define KS_14 27
 #define KS_15 28
+#define VOTE_START 29
+#define VOTE_END 30
 
 /* ---------- Configs Cookie ---------- */
 #define QUAKE 1
@@ -50,35 +52,36 @@ public Plugin:myinfo =
 #define OVERLAYS 4 
 #define MESSAGE 8
 
+/* ---------- Player team ---------- */
 #define TR 2
 #define CT 3
 
+/* ---------- Game ---------- */
 #define CSS 1
 #define CSGO 2
 
 /* ---------- Variables ---------- */
 new	
 	Game,															// Игра
-	String:sSearchName[29][96],										// Имя для поиска
-	bool:bSearchName[29] = {false, ...},							// Использовать ли имя
-	String:sPathFolder[29][192],									// Путь в папку
-	iEventConfig[29],												// Конфигурации для события
-	bool:bRandom[29],												// Будет ли случайный звук
-	Float:fVolume[29],												// Громкость события
+	String:sSearchName[31][96],										// Имя для поиска
+	bool:bSearchName[31] = {false, ...},							// Использовать ли имя
+	String:sPathFolder[31][192],									// Путь в папку
+	iEventConfig[31],												// Конфигурации для события
+	bool:bRandom[31],												// Будет ли случайный звук
+	Float:fVolume[31],												// Громкость события
 	Float:fComboTimer,												// Таймер для Combo
-	//Float:fPlayTimer,												// Таймер для JoinPlay
 	
-	bool:bEnableEvent[29],											// Проверяет на включение звук
-	iAbacusSounds[29],												// Количество звуков
-	iKillSound[29],													// Cколько нужно убить
-	iSoundNumber[29] = { -1, ...},									// Счетчик количества звуков
+	bool:bEnableEvent[31],											// Проверяет на включение звук
+	iAbacusSounds[31],												// Количество звуков
+	iKillSound[31],													// Cколько нужно убить
+	iSoundNumber[31] = { -1, ...},									// Счетчик количества звуков
 	
 	iFirstKill,														// Первое убийство
 	iPlayerKills[MAXPLAYERS + 1],									// Сколько убил каждый игрок
 	iComboTimer_Player[MAXPLAYERS + 1],								// Сколько убил кадлый игрок для комба
 	Float:fComboTimer_Player[MAXPLAYERS + 1],						// Таймер убийства игроков
 		
-	Handle:hPathSound[29],											// Запись пути к звукам
+	Handle:hPathSound[31],											// Запись пути к звукам
 	Handle:hDir,													// По очередное присваевание пути
 	Handle:QS_key,													// Ключ
 	
@@ -88,14 +91,17 @@ new
 	Handle:TimerAdvert = INVALID_HANDLE,							// Запись времени появления сообщения 
 		
 	Handle:TimerOverlay[MAXPLAYERS + 1],							// Таймер накладки оверлея
-	String:sPathOverlay[4][29][192],								// Путь к оверлею командному
-	Float:fOverlayClear[29],										// Через сколько секунд очищать экран
-	bool:bEnableOverlay[29] = {false, ...},							// Включен ли Оверлай
+	String:sPathOverlay[4][31][192],								// Путь к оверлею командному
+	Float:fOverlayClear[31],										// Через сколько секунд очищать экран
+	bool:bEnableOverlay[31] = {false, ...},							// Включен ли Оверлай
 	bool:bMapEnd = false,											// Карта закончилась
 	
 	iEvent_Sound = 0,												// Есть EVENT_SOUNDS
 	iQuake_Sound = 0,												// Есть QUAKE
 	iOverlays = 0,													// Есть OVERLAYS
+	
+	Handle:TimerVore = INVALID_HANDLE,								// Запись проверки на голосование
+	bool:bStartVote,												// Голосование началось
 	
 	kill = 0;														// Для Обычных убийств
 
@@ -116,7 +122,7 @@ new
 #define ADVERT_MESSAGE "\"Random Quake Sounds\" by acik"
 #define MENU_TITLE "Настройка плагина\n\"Random Quake Sounds\"\n \n"
 	
-static const String:NameEvents[29][96] = {"FirstBlood", "Headshot", "Knife", "Grenade", "TeamKill", "Suicide", "Double", "Triple", "Quad", "Monster", "JoinPlay", "Round Start", "Round End", "Map End", "KillSound 1", "KillSound 2", "KillSound 3", "KillSound 4", "KillSound 5", "KillSound 6", "KillSound 7", "KillSound 8", "KillSound 9", "KillSound 10", "KillSound 11", "KillSound 12", "KillSound 13", "KillSound 14", "KillSound 15"};
+static const String:NameEvents[31][96] = {"FirstBlood", "Headshot", "Knife", "Grenade", "TeamKill", "Suicide", "Double", "Triple", "Quad", "Monster", "JoinPlay", "Round Start", "Round End", "Map End", "KillSound 1", "KillSound 2", "KillSound 3", "KillSound 4", "KillSound 5", "KillSound 6", "KillSound 7", "KillSound 8", "KillSound 9", "KillSound 10", "KillSound 11", "KillSound 12", "KillSound 13", "KillSound 14", "KillSound 15", "Vote Start", "Vote End"};
 
 public OnPluginStart() {
 	new String:bufferString[16];
@@ -142,7 +148,7 @@ public OnPluginStart() {
 		Load_Configs_Sounds();
 		/* ---------- HookEvent ----------- */	
 		HookEvent("player_death", Event_PlayerDeath, EventHookMode_Post);
-		HookEvent("round_start", Event_RoundStart, EventHookMode_PostNoCopy);
+		HookEvent("round_start", Event_RoundStart, EventHookMode_Pre);
 		HookEvent("round_freeze_end", Event_FreezeEnd, EventHookMode_PostNoCopy);
 		HookEvent("round_end", Event_RoundEnd, EventHookMode_PostNoCopy);
 		HookEvent("game_end", Event_GameEnd, EventHookMode_Pre);
@@ -169,7 +175,7 @@ Load_Configs_Sounds() {
 	BuildPath(Path_SM, fileQSL, 192, "configs/Random_QuakeSounds.ini");
 	FileToKeyValues(QS_key, fileQSL);
 		
-	for(new event = FIRST; event <= KS_15; event++) {
+	for(new event = FIRST; event <= VOTE_END; event++) {
 		
 		KvRewind(QS_key);
 		if(event >= DOUB && event <= MONS) {
@@ -178,9 +184,10 @@ Load_Configs_Sounds() {
 		}
 		KvJumpToKey(QS_key, NameEvents[event]);
 		
-		if(event >= JOIN && event <= M_END) {
+		if(bNunbEventSound(event))
 			iEventConfig[event] = KvGetNum(QS_key, "Enable", 1);
-		} else iEventConfig[event] = KvGetNum(QS_key, "Config", 7);
+		else 
+			iEventConfig[event] = KvGetNum(QS_key, "Config", 7);
 		if(iEventConfig[event] == 0) {
 			bEnableEvent[event] = false;
 			continue;
@@ -241,8 +248,8 @@ Load_Configs_Sounds() {
 		} else bEnableEvent[event] = true;
 		
 		if(bEnableEvent[event]) {
-			if(event != R_END && event != M_END && event != R_START && event != JOIN) iQuake_Sound++;
-			else iEvent_Sound++;
+			if(bNunbEventSound(event)) iEvent_Sound++;
+			else iQuake_Sound++;
 			
 			if(event != R_END && event != M_END) {
 				KvGetString(QS_key, "Path_Overlay", sPathOverlay[0][event], 192);
@@ -267,7 +274,7 @@ Load_Configs_Sounds() {
  public OnMapStart() {
 
 	decl String:SoundName[192];
-	for(new event = FIRST; event <= KS_15; event++) {
+	for(new event = FIRST; event <= VOTE_END; event++) {
 		if(!bEnableEvent[event]) continue;
 		for(new number = 0; number < iAbacusSounds[event]; number++) {
 			GetArrayString(hPathSound[event], number, SoundName, 192);
@@ -304,6 +311,9 @@ Load_Configs_Sounds() {
  	if(TimerAdvert == INVALID_HANDLE) {
 		TimerAdvert = CreateTimer(fIntervalMessage, MessageSayAll, _, TIMER_REPEAT);
 	}
+ 	if(TimerVore == INVALID_HANDLE) {
+		TimerVore = CreateTimer(0.5, Actively_Vote, _, TIMER_REPEAT);
+	}
 }
 
 public Action:MessageSayAll(Handle:timer) {
@@ -316,8 +326,23 @@ public Action:MessageSayAll(Handle:timer) {
 		}
 	}
 }
-/*public Action:MessageSayAll(Handle:timer) if(iEvent_Sound || iQuake_Sound || iOverlays) CPrintToChatAll("%t", "Message_Player");*/
-			
+
+public Action:Actively_Vote(Handle:timer) {
+	new VoteId = 0;
+	if(IsVoteInProgress() && !bStartVote) {
+		VoteId = VOTE_START;
+		bStartVote = true;
+	}
+	if(!IsVoteInProgress() && bStartVote) {
+		VoteId = VOTE_END;
+		bStartVote = false;
+	}
+	if(VoteId) {
+		if(bEnableEvent[VoteId]) Play_Event_Sound(VoteId, 0);
+		if(bEnableOverlay[VoteId]) Play_Overlay(VoteId, 0, false, 0);				
+	}
+}
+		
 public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast) {
 	if(!bEnable) return;
 	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
@@ -399,7 +424,7 @@ public NewRoundInitialization(){
 	}
 }
 
-public Event_RoundStart(Handle:event, const String:name[], bool:dontBroadcast) {
+public Action:Event_RoundStart(Handle:event, const String:name[], bool:dontBroadcast) {
 	if(!bEnable) return;
 	NewRoundInitialization();
 }
@@ -466,7 +491,6 @@ public Play_Overlay(Id, client, bool:bAll, win) {
 			}
 		}
 	} else {
-		//new  iMaxClients = GetMaxClients();
 		for(new iClient = 1; iClient <= MaxClients; iClient++) {
 			if(IsClientInGame(iClient)  && !IsFakeClient(iClient)) {
 				if(iCookieConfigs[iClient] & OVERLAYS) {
@@ -680,6 +704,16 @@ stock Client_SetOverlay(client, const String:path[]) ClientCommand(client, "r_sc
 // Очистить Оверлай
 stock Client_ClearOverlay(client) ClientCommand(client, "r_screenoverlay \"\"");
 
+public bool:bNunbEventSound(event) {
+	if(event == R_END ||
+		event == R_START ||
+		event == JOIN ||
+		event == M_END ||
+		event == VOTE_END ||
+		event == VOTE_START) return true;
+	return false;
+}
+
 public bool:ThisGrenade(String:weapon[]) {
 	if(Game == CSS) { 
 		if(StrEqual(weapon, "hegrenade") || 
@@ -701,7 +735,7 @@ public bool:ThisKnife(String:weapon[]) {
 		if(StrEqual(weapon, "knife")) 
 		return true;
 	
-	} else if(Game == CSGO) {
+	} else if(Game == CSGO){
 		if(StrEqual(weapon,"knife_default_ct") ||
 			StrEqual(weapon,"knife_default_t") || 
 			StrEqual(weapon,"knifegg") || 
