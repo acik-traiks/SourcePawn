@@ -100,7 +100,7 @@ new
 	iQuake_Sound = 0,												// Есть QUAKE
 	iOverlays = 0,													// Есть OVERLAYS
 	
-	Handle:TimerVore = INVALID_HANDLE,								// Запись проверки на голосование
+	//Handle:TimerVote = INVALID_HANDLE,							// Запись проверки на голосование
 	bool:bStartVote,												// Голосование началось
 	
 	kill = 0;														// Для Обычных убийств
@@ -157,6 +157,15 @@ public OnPluginStart() {
 		
 		RegConsoleCmd("sm_quake",CMD_ShowQuakePrefsMenu);
 		SetCookieMenuItem(QuakePrefSelected, 0, "Quake Sound Prefs");
+		
+		
+		RegConsoleCmd("sm_votemap", Command_Vote);
+		RegConsoleCmd("sm_votekick", Command_Vote);
+		RegConsoleCmd("sm_voteban", Command_Vote);
+		RegConsoleCmd("sm_vote", Command_Vote);
+		RegConsoleCmd("say", Command_Vote);
+		RegConsoleCmd("say2", Command_Vote);
+		RegConsoleCmd("say_team", Command_Vote);
 	}
 }
 
@@ -311,9 +320,6 @@ Load_Configs_Sounds() {
  	if(TimerAdvert == INVALID_HANDLE) {
 		TimerAdvert = CreateTimer(fIntervalMessage, MessageSayAll, _, TIMER_REPEAT);
 	}
- 	if(TimerVore == INVALID_HANDLE) {
-		TimerVore = CreateTimer(0.5, Actively_Vote, _, TIMER_REPEAT);
-	}
 }
 
 public Action:MessageSayAll(Handle:timer) {
@@ -325,6 +331,17 @@ public Action:MessageSayAll(Handle:timer) {
 			}
 		}
 	}
+}
+
+public Action:Command_Vote(client, args) {
+	
+ 	CreateTimer(0.01, Actively_Vote, _, TIMER_FLAG_NO_MAPCHANGE);
+	return Plugin_Continue;
+}
+
+public OnMapVoteStarted() {
+
+	CreateTimer(0.01, Actively_Vote, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 
 public Action:Actively_Vote(Handle:timer) {
@@ -340,7 +357,8 @@ public Action:Actively_Vote(Handle:timer) {
 	if(VoteId) {
 		if(bEnableEvent[VoteId]) Play_Event_Sound(VoteId, 0);
 		if(bEnableOverlay[VoteId]) Play_Overlay(VoteId, 0, false, 0);				
-	}
+	} else
+		CreateTimer(0.5, Actively_Vote, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 		
 public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast) {
@@ -361,14 +379,14 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast) 
 	iComboTimer_Player[victim] = 0;
 
 	if(!bSimpleDeath) {
-		if(bEnableEvent[HEAD] && headshot) Id = HEAD;
-		if(bEnableEvent[KNIFE] && ThisKnife(weapon)) Id = KNIFE;
-		if(bEnableEvent[GREN] && ThisGrenade(weapon)) Id = GREN;
+		if(bEnableEvent[HEAD]) if(headshot) Id = HEAD;
+		if(bEnableEvent[KNIFE]) if(ThisKnife(weapon)) Id = KNIFE;
+		if(bEnableEvent[GREN]) if(ThisGrenade(weapon)) Id = GREN;
 	}
+	
 	for(new ks = KS_1; ks <= KS_15; ks++) {
-		kill++;
-		if(kill >= 16) kill = 0;
-		if(bEnableEvent[ks]) continue;
+		if(++kill >= 15) kill = 0;
+		if(!bEnableEvent[ks]) continue;
 		if(!bSimpleDeath) {
 			if(iPlayerKills[attacker] == iKillSound[ks]) {
 				Id = ks;
@@ -381,11 +399,13 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast) 
 			}
 		}
 	}
+	
 	if(bSimpleDeath) {
-		if(bEnableEvent[HEAD] && headshot) Id = HEAD;
-		if(bEnableEvent[KNIFE] && ThisKnife(weapon)) Id = KNIFE;
-		if(bEnableEvent[GREN] && ThisGrenade(weapon)) Id = GREN;
-	}	
+		if(bEnableEvent[HEAD]) if(headshot) Id = HEAD;
+		if(bEnableEvent[KNIFE]) if(ThisKnife(weapon)) Id = KNIFE;
+		if(bEnableEvent[GREN]) if(ThisGrenade(weapon)) Id = GREN;
+	}
+	
 	if(bEnableEvent[DOUB] || bEnableEvent[TRIP] || bEnableEvent[QUAD] || bEnableEvent[MONS]) {
 		new Float:fLastKillTime = fComboTimer_Player[attacker];
 		fComboTimer_Player[attacker] = GetEngineTime();
@@ -403,7 +423,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast) 
 			}
 		}
 	}
-	
+		
 	if(bEnableEvent[TEAMK]) if(attacker_team == victim_team) Id = TEAMK; 
 	
 	if(bEnableEvent[SUIC]) if(attacker == victim) Id = SUIC;
@@ -414,6 +434,10 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast) 
 	if(Id >= FIRST && bEnableOverlay[Id]) Play_Overlay(Id, attacker, true, 0);
 }
 
+ public Simple_Death(){
+
+}
+		
 public NewRoundInitialization(){
 
 	kill = 0;
@@ -529,10 +553,11 @@ public Play_Quake_Sound(Id, attacker, victim) {
 	if(bRandom[Id]) 
 		iSoundNumber[Id] = GetRandomInt(0, iAbacusSounds[Id]-1);
 	else {
-		if(++iSoundNumber[Id] >= iAbacusSounds[Id]) iSoundNumber[Id] = 0;
+		if(++iSoundNumber[Id] > iAbacusSounds[Id]-1) iSoundNumber[Id] = 0;
 	}
-	GetArrayString(hPathSound[Id], iSoundNumber[Id], SoundName, 192);
+	GetArrayString(hPathSound[Id], iSoundNumber[Id], SoundName, 192);	
 	
+	PrintToChat(attacker, "%s: %s", NameEvents[Id], SoundName);
 	if(iEventConfig[Id] & 1) if(iCookieConfigs[attacker] & QUAKE) EmitSoundToClient(attacker, SoundName, _, _, _, _, fVolume[Id]);
 	if(iEventConfig[Id] & 2) if(iCookieConfigs[victim] & QUAKE) EmitSoundToClient(victim, SoundName, _, _, _, _, fVolume[Id]);
 	if(iEventConfig[Id] & 4 || iEventConfig[Id] & 8) {
@@ -549,13 +574,13 @@ public Play_Event_Sound(Id, client) {
 
 	if(!bEnable || iEventConfig[Id] != 1 || iAbacusSounds[Id] < 1) return;
 	decl String:SoundName[192];
-		
+	
 	if(bRandom[Id]) 
 		iSoundNumber[Id] = GetRandomInt(0, iAbacusSounds[Id]-1);
 	else {
-		if(++iSoundNumber[Id] >= iAbacusSounds[Id]) iSoundNumber[Id] = 0;
+		if(++iSoundNumber[Id] > iAbacusSounds[Id]-1) iSoundNumber[Id] = 0;
 	}
-	GetArrayString(hPathSound[Id], iSoundNumber[Id], SoundName, 192);
+	GetArrayString(hPathSound[Id], iSoundNumber[Id], SoundName, 192);	
 
 	if(Id == JOIN) {
 		if(IsClientInGame(client) && !IsFakeClient(client)) if(iCookieConfigs[client] & EVENT_SOUNDS) EmitSoundToClient(client, SoundName, _, _, _, _, fVolume[Id]);
