@@ -701,7 +701,7 @@ public bool:ThisKnife(String:weapon[]) {
 		if(StrEqual(weapon, "knife")) 
 		return true;
 	
-	} else if(Game == CSGO){
+	} else if(Game == CSGO) {
 		if(StrEqual(weapon,"knife_default_ct") ||
 			StrEqual(weapon,"knife_default_t") || 
 			StrEqual(weapon,"knifegg") || 
