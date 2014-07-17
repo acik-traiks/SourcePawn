@@ -387,7 +387,7 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast) 
 	}
 	
 	for(new ks = KS_1; ks <= KS_15; ks++) {
-		if(++kill >= 15) kill = 0;
+		if(++kill >= 16) kill = 0;
 		if(!bEnableEvent[ks]) continue;
 		if(!bSimpleDeath) {
 			if(iPlayerKills[attacker] == iKillSound[ks]) {
