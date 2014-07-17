@@ -460,7 +460,7 @@ public Action:Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadca
 	if(!bEnable) return;
 	new win = GetEventInt(event, "winner");
 	if (win > 1) {
-		if(!CheckMapEnd()){
+		if(CheckMapEnd()){
 			if(bEnableEvent[R_END]) Play_Event_Sound(R_END, 0);
 			if(bEnableOverlay[R_END]) Play_Overlay(R_END, 0, false, win);
 		} else {
