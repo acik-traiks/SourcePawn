@@ -99,8 +99,7 @@ new
 	iEvent_Sound = 0,												// Есть EVENT_SOUNDS
 	iQuake_Sound = 0,												// Есть QUAKE
 	iOverlays = 0,													// Есть OVERLAYS
-	
-	//Handle:TimerVote = INVALID_HANDLE,							// Запись проверки на голосование
+
 	bool:bStartVote,												// Голосование началось
 	
 	kill = 0;														// Для Обычных убийств
