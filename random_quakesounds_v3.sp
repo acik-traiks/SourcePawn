@@ -194,7 +194,7 @@ Load_Configs_Sounds() {
 		}
 		KvJumpToKey(QS_key, NameEvents[event]);
 		
-		if(bNunbEventSound(event))
+		if(bEvent_Sound(event))
 			iEventConfig[event] = KvGetNum(QS_key, "Enable", 1);
 		else 
 			iEventConfig[event] = KvGetNum(QS_key, "Config", 7);
@@ -258,7 +258,7 @@ Load_Configs_Sounds() {
 		} else bEnableEvent[event] = true;
 		
 		if(bEnableEvent[event]) {
-			if(bNunbEventSound(event)) iEvent_Sound++;
+			if(bEvent_Sound(event)) iEvent_Sound++;
 			else iQuake_Sound++;
 			
 			if(event != R_END && event != M_END) {
@@ -460,11 +460,15 @@ public Action:Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadca
 	if(!bEnable) return;
 	new win = GetEventInt(event, "winner");
 	if (win > 1) {
-		if(CheckMapEnd()){
-			if(bEnableEvent[R_END]) Play_Event_Sound(R_END, 0);
+		if(!CheckMapEnd()){
+			if(bEnableEvent[R_END]) {
+				Play_Event_Sound(R_END, 0);
+			}
 			if(bEnableOverlay[R_END]) Play_Overlay(R_END, 0, false, win);
 		} else {
-			if(bEnableEvent[M_END]) Play_Event_Sound(M_END, 0);
+			if(bEnableEvent[M_END]) {
+				Play_Event_Sound(M_END, 0);
+			}
 			if(bEnableOverlay[M_END]) Play_Overlay(M_END, 0, false, win);
 		}
 	}
@@ -551,7 +555,6 @@ public Play_Quake_Sound(Id, attacker, victim) {
 	}
 	GetArrayString(hPathSound[Id], iSoundNumber[Id], SoundName, 192);	
 	
-	PrintToChat(attacker, "%s: %s", NameEvents[Id], SoundName);
 	if(iEventConfig[Id] & 1) if(iCookieConfigs[attacker] & QUAKE) EmitSoundToClient(attacker, SoundName, _, _, _, _, fVolume[Id]);
 	if(iEventConfig[Id] & 2) if(iCookieConfigs[victim] & QUAKE) EmitSoundToClient(victim, SoundName, _, _, _, _, fVolume[Id]);
 	if(iEventConfig[Id] & 4 || iEventConfig[Id] & 8) {
@@ -586,6 +589,8 @@ public Play_Event_Sound(Id, client) {
 		}
 	}
 }
+
+
 /* ----------	End Event & Quake Sound	---------- */
 
 Load_Setting_Player(client) {
@@ -658,7 +663,7 @@ public ShowQuakeMenu(client) {
 	DisplayMenu(menu, client, 15);
 }
 
-public MenuHandlerQuake(Handle:menu, MenuAction:action, param1, param2) {
+public MenuHandlerQuake(Handle:menu, MenuAction:action, client, param2) {
 
 	if(action == MenuAction_Select)	
 	{
@@ -667,51 +672,51 @@ public MenuHandlerQuake(Handle:menu, MenuAction:action, param1, param2) {
 			if(iQuake_Sound) {
 				key++;
 				if(param2 == key) {
-					if(iCookieConfigs[param1] & QUAKE) {
-						if(iCookieConfigs[param1] & MESSAGE) CPrintToChat(param1, "%t", "Message_Quake_Off");		
-						iCookieConfigs[param1] -= QUAKE;
+					if(iCookieConfigs[client] & QUAKE) {
+						if(iCookieConfigs[client] & MESSAGE) CPrintToChat(client, "%t", "Message_Quake_Off");
+						iCookieConfigs[client] -= QUAKE;
 					} else {
-						if(iCookieConfigs[param1] & MESSAGE) CPrintToChat(param1, "%t", "Message_Quake_On");
-						iCookieConfigs[param1] += QUAKE;
+						if(iCookieConfigs[client] & MESSAGE) CPrintToChat(client, "%t", "Message_Quake_On");
+						iCookieConfigs[client] += QUAKE;
 					}
 				}
 			}		
 			if(iEvent_Sound) {
 				key++;
 				if(param2 == key) {
-					if(iCookieConfigs[param1] & EVENT_SOUNDS) {
-						if(iCookieConfigs[param1] & MESSAGE) CPrintToChat(param1, "%t", "Message_Event_Off");
-						iCookieConfigs[param1] -= EVENT_SOUNDS;
+					if(iCookieConfigs[client] & EVENT_SOUNDS) {
+						if(iCookieConfigs[client] & MESSAGE) CPrintToChat(client, "%t", "Message_Event_Off");
+						iCookieConfigs[client] -= EVENT_SOUNDS;
 					} else {
-						if(iCookieConfigs[param1] & MESSAGE) CPrintToChat(param1, "%t", "Message_Event_On");
-						iCookieConfigs[param1] += EVENT_SOUNDS;
+						if(iCookieConfigs[client] & MESSAGE) CPrintToChat(client, "%t", "Message_Event_On");
+						iCookieConfigs[client] += EVENT_SOUNDS;
 					}
 				}
 			}
 			if(iOverlays) {
 				key++;
 				if(param2 == key) {
-					if(iCookieConfigs[param1] & OVERLAYS) {
-						if(iCookieConfigs[param1] & MESSAGE) CPrintToChat(param1, "%t", "Message_Overlays_Off");			
-						iCookieConfigs[param1] -= OVERLAYS;
+					if(iCookieConfigs[client] & OVERLAYS) {
+						if(iCookieConfigs[client] & MESSAGE) CPrintToChat(client, "%t", "Message_Overlays_Off");			
+						iCookieConfigs[client] -= OVERLAYS;
 					} else { 
-						if(iCookieConfigs[param1] & MESSAGE) CPrintToChat(param1, "%t", "Message_Overlays_On");		
-						iCookieConfigs[param1] += OVERLAYS;
+						if(iCookieConfigs[client] & MESSAGE) CPrintToChat(client, "%t", "Message_Overlays_On");		
+						iCookieConfigs[client] += OVERLAYS;
 					}
 				}
 			}
 			key++;
 			if(param2 == key) {
-				if(iCookieConfigs[param1] & MESSAGE) {
-					iCookieConfigs[param1] -= MESSAGE;
+				if(iCookieConfigs[client] & MESSAGE) {
+					iCookieConfigs[client] -= MESSAGE;
 				} else { 
-					iCookieConfigs[param1] += MESSAGE;
+					iCookieConfigs[client] += MESSAGE;
 				}
 			}
 			new String:buffer[10];
-			IntToString(iCookieConfigs[param1], buffer, 10);
-			SetClientCookie(param1, hClientCookie, buffer);
-			ShowQuakeMenu(param1);
+			IntToString(iCookieConfigs[client], buffer, 10);
+			SetClientCookie(client, hClientCookie, buffer);
+			ShowQuakeMenu(client);
 		}
 	} 
 	else if(action == MenuAction_End) CloseHandle(menu);
@@ -770,7 +775,7 @@ bool:CheckMapEnd()
 /* ----------	End author Riko	---------- */
 
 
-public bool:bNunbEventSound(event) {
+public bool:bEvent_Sound(event) {
 	if(event == R_END ||
 		event == R_START ||
 		event == JOIN ||
