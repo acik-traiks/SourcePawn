@@ -102,7 +102,8 @@ new
 
 	bool:bStartVote,												// Голосование началось
 	
-	kill = 0;														// Для Обычных убийств
+	kill = 0,														// Для Обычных убийств
+	iNumberRounds;													// Количество Раундов
 
 /* ---------- Exec Config ---------- */
 new
@@ -120,12 +121,18 @@ new
 		
 static const String:NameEvents[31][96] = {"FirstBlood", "Headshot", "Knife", "Grenade", "TeamKill", "Suicide", "Double", "Triple", "Quad", "Monster", "JoinPlay", "Round Start", "Round End", "Map End", "KillSound 1", "KillSound 2", "KillSound 3", "KillSound 4", "KillSound 5", "KillSound 6", "KillSound 7", "KillSound 8", "KillSound 9", "KillSound 10", "KillSound 11", "KillSound 12", "KillSound 13", "KillSound 14", "KillSound 15", "Vote Start", "Vote End"};
 
+new Handle:g_Cvar_WinLimit;
+new Handle:g_Cvar_MaxRounds;
+
 public OnPluginStart() {
 	new String:bufferString[16];
 	GetGameFolderName(bufferString,16);
 	if(StrEqual(bufferString,"cstrike",false)) Game = CSS;
 	else if(StrEqual(bufferString,"csgo",false)) Game = CSGO;
 	else SetFailState("Plugin not supported game");
+	
+	g_Cvar_WinLimit = FindConVar("mp_winlimit");
+	g_Cvar_MaxRounds = FindConVar("mp_maxrounds");
 	
 	hEnable = CreateConVar("sm_quake_enable", "1", "Включить плагин", _, true, 0.0, true, 1.0);
 	hIntervalMessage = CreateConVar("sm_quake_interval", "150.0", "Интервал повтора сообщения", _, true, 60.0);
@@ -143,11 +150,10 @@ public OnPluginStart() {
 	if(bEnable) {
 		Load_Configs_Sounds();
 		/* ---------- HookEvent ----------- */	
-		HookEvent("player_death", Event_PlayerDeath, EventHookMode_Post);
+		HookEvent("player_death", Event_PlayerDeath);
 		HookEvent("round_start", Event_RoundStart, EventHookMode_Pre);
 		HookEvent("round_freeze_end", Event_FreezeEnd, EventHookMode_PostNoCopy);
-		HookEvent("round_end", Event_RoundEnd, EventHookMode_PostNoCopy);
-		HookEvent("game_end", Event_GameEnd, EventHookMode_Pre);
+		HookEvent("round_end", Event_RoundEnd);
 		
 		hClientCookie = RegClientCookie("RandomQuakeSounds", "RandomQuakeSounds", CookieAccess_Private);
 		
@@ -277,6 +283,7 @@ Load_Configs_Sounds() {
  
  public OnMapStart() {
 
+	iNumberRounds = 0;
 	decl String:SoundName[192];
 	for(new event = FIRST; event <= VOTE_END; event++) {
 		if(!bEnableEvent[event]) continue;
@@ -449,23 +456,17 @@ public Event_FreezeEnd(Handle:event, const String:name[], bool:dontBroadcast) {
 	if(bEnableOverlay[R_START]) Play_Overlay(R_START, 0, false, 0);
 }
 
-public Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast) {
-	if(!bEnable) return;
-	if(bMapEnd) return;
-	new win = GetEventInt(event, "winner");
-	if (win > 1) {
-		if(bEnableEvent[R_END]) Play_Event_Sound(R_END, 0);
-		if(bEnableOverlay[R_END]) Play_Overlay(R_END, 0, false, win);
-	}
-}
-
-public Action:Event_GameEnd(Handle:event, const String:name[], bool:dontBroadcast) {
+public Action:Event_RoundEnd(Handle:event, const String:name[], bool:dontBroadcast) {
 	if(!bEnable) return;
 	new win = GetEventInt(event, "winner");
 	if (win > 1) {
-		if(bEnableEvent[M_END]) bMapEnd = true;
-		if(bEnableEvent[M_END]) Play_Event_Sound(M_END, 0);
-		if(bEnableOverlay[M_END]) Play_Overlay(M_END, 0, false, win);
+		if(CheckMapEnd()){
+			if(bEnableEvent[R_END]) Play_Event_Sound(R_END, 0);
+			if(bEnableOverlay[R_END]) Play_Overlay(R_END, 0, false, win);
+		} else {
+			if(bEnableEvent[M_END]) Play_Event_Sound(M_END, 0);
+			if(bEnableOverlay[M_END]) Play_Overlay(M_END, 0, false, win);
+		}
 	}
 }
 
@@ -723,6 +724,51 @@ stock Client_SetOverlay(client, const String:path[]) ClientCommand(client, "r_sc
 
 // Очистить Оверлай
 stock Client_ClearOverlay(client) ClientCommand(client, "r_screenoverlay \"\"");
+
+/* ----------	Start author Riko	---------- */
+bool:CheckMapEnd()
+{
+	new bool:lastround = false;
+	new bool:notimelimit = false;
+	new timeleft;
+	
+	if (GetMapTimeLeft(timeleft))
+	{
+		new timelimit;
+		if (timeleft > 0) return false;
+		else if (GetMapTimeLimit(timelimit) && !timelimit) notimelimit = true;
+		else lastround = true;
+	}
+	
+	if (!lastround)
+	{
+		if (g_Cvar_WinLimit != INVALID_HANDLE)
+		{
+			new winlimit = GetConVarInt(g_Cvar_WinLimit);
+			if (winlimit > 0)
+			{
+				if (GetTeamScore(2) >= winlimit || GetTeamScore(3) >= winlimit) lastround = true;
+			}
+		}
+		
+		if (g_Cvar_MaxRounds != INVALID_HANDLE)
+		{
+			new maxrounds = GetConVarInt(g_Cvar_MaxRounds);
+			
+			if (maxrounds > 0)
+			{
+				new remaining = maxrounds - iNumberRounds;	
+				if (!remaining) lastround = true;
+			}		
+		}
+	}
+	
+	if (lastround) return true;
+	else if (notimelimit) return false;
+	return true;
+}
+/* ----------	End author Riko	---------- */
+
 
 public bool:bNunbEventSound(event) {
 	if(event == R_END ||
