@@ -10,7 +10,7 @@
 public Plugin:myinfo = 
 {
 	name = "Random Quake Sounds by acik",
-	version = "17.07.2014"
+	version = "16.07.2014"
 };
 
 /* ---------- Id Event ---------- */
@@ -117,7 +117,10 @@ new
 	
 	Handle:hSimpleDeath,											// Конфиг включения простых убийств
 	bool:bSimpleDeath;												// Настройка простых убийств
-		
+	
+#define ADVERT_MESSAGE "\"Random Quake Sounds\" by acik"
+#define MENU_TITLE "Настройка плагина\n\"Random Quake Sounds\"\n \n"
+	
 static const String:NameEvents[31][96] = {"FirstBlood", "Headshot", "Knife", "Grenade", "TeamKill", "Suicide", "Double", "Triple", "Quad", "Monster", "JoinPlay", "Round Start", "Round End", "Map End", "KillSound 1", "KillSound 2", "KillSound 3", "KillSound 4", "KillSound 5", "KillSound 6", "KillSound 7", "KillSound 8", "KillSound 9", "KillSound 10", "KillSound 11", "KillSound 12", "KillSound 13", "KillSound 14", "KillSound 15", "Vote Start", "Vote End"};
 
 public OnPluginStart() {
@@ -153,6 +156,7 @@ public OnPluginStart() {
 		
 		RegConsoleCmd("sm_quake",CMD_ShowQuakePrefsMenu);
 		SetCookieMenuItem(QuakePrefSelected, 0, "Quake Sound Prefs");
+		
 		
 		RegConsoleCmd("sm_votemap", Command_Vote);
 		RegConsoleCmd("sm_votekick", Command_Vote);
@@ -428,6 +432,10 @@ public Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroadcast) 
 	if(Id >= FIRST && bEnableEvent[Id] && !bMapEnd) Play_Quake_Sound(Id, attacker, victim);
 	if(Id >= FIRST && bEnableOverlay[Id]) Play_Overlay(Id, attacker, true, 0);
 }
+
+ public Simple_Death(){
+
+}
 		
 public NewRoundInitialization(){
 
@@ -481,10 +489,8 @@ public OnClientPutInServer(client) {
 public Action:Join_Player(Handle:timer, any:client) {
 	if(bEnableEvent[JOIN]) Play_Event_Sound(JOIN, client);
 	if(bEnableOverlay[JOIN]) Play_Overlay(JOIN, client, true, 0);
+
 }
-
-#define ADVERT_MESSAGE "\"Random Quake Sounds\" by acik"
-
 public Action:Advert_Message(Handle:timer, any:client) 
 	if(IsClientInGame(client) && bEnable) 
 		if(iEvent_Sound || iQuake_Sound || iOverlays) 
@@ -608,8 +614,6 @@ public Action:CMD_ShowQuakePrefsMenu(client, args) {
 	ShowQuakeMenu(client);
 	return Plugin_Handled;
 }
-
-#define MENU_TITLE "Настройка плагина\n\"Random Quake Sounds\"\n \n"
 
 public ShowQuakeMenu(client) {
 
