@@ -300,7 +300,7 @@ Load_Configs_Sounds()
  public OnMapStart() 
  {
 	iNumberRounds = 0;
-	decl String:SoundName[192];
+	decl String:SoundName[192], String:PreCacheSound[192];
 	for(new event = JOIN; event <= KS_15; event++) 
 	{
 		if(bEnableSound[event]) 
@@ -308,7 +308,15 @@ Load_Configs_Sounds()
 			for(new number = 0; number < iAbacusSounds[event]; number++) 
 			{
 				GetArrayString(hPathSound[event], number, SoundName, 192);
-				PrecacheSound(SoundName, true);
+				if(Game == CSGO)
+				{
+					Format(PreCacheSound, 192, "*%s", SoundName);
+					AddToStringTable(FindStringTable("soundprecache"), PreCacheSound);
+				}
+				else
+				{
+					PrecacheSound(SoundName, true);
+				}
 				Format(SoundName, 192, "sound/%s", SoundName); 
 				AddFileToDownloadsTable(SoundName);
 			}
@@ -1038,7 +1046,7 @@ stock Client_ClearOverlay(client)
 	ClientCommand(client, "r_screenoverlay \"\"");
 }
 
-bool:CheckMapEnd()
+stock bool:CheckMapEnd()
 {
 	new bool:lastround = false;
 	new bool:notimelimit = false;
@@ -1096,7 +1104,7 @@ bool:CheckMapEnd()
 	return true;
 }
 
-bool:bEvent_Sound(event) 
+stock bool:bEvent_Sound(event) 
 {
 	if(event != R_END &&
 	event != R_START &&
@@ -1110,7 +1118,7 @@ bool:bEvent_Sound(event)
 	return true;
 }
 
-bool:ThisGrenade(String:weapon[]) 
+stock bool:ThisGrenade(String:weapon[]) 
 {
 	if(Game == CSS) 
 	{ 
@@ -1136,7 +1144,7 @@ bool:ThisGrenade(String:weapon[])
 	return false;
 }
 
-bool:ThisKnife(String:weapon[]) 
+stock bool:ThisKnife(String:weapon[]) 
 {
 	if(Game == CSS) 
 	{ 
