@@ -310,7 +310,6 @@ Load_Configs_Sounds()
 				GetArrayString(hPathSound[event], number, SoundName, 192);
 				if(Game == CSGO)
 				{
-					Format(PreCacheSound, 192, "*%s", SoundName);
 					AddToStringTable(FindStringTable("soundprecache"), PreCacheSound);
 				}
 				else
@@ -778,7 +777,11 @@ public Play_Quake_Sound(Id, attacker, victim)
 	{
 		if(++iSoundNumber[Id] > iAbacusSounds[Id]-1) iSoundNumber[Id] = 0;
 	}
-	GetArrayString(hPathSound[Id], iSoundNumber[Id], SoundName, 192);	
+	GetArrayString(hPathSound[Id], iSoundNumber[Id], SoundName, 192);
+	if(Game == CSGO)
+	{
+		Format(SoundName, 192, "*%s", SoundName);
+	}
 	if(iEventConfig[Id] & 1) 
 	{
 		if(iCookieConfigs[attacker] & QUAKE)
@@ -831,7 +834,11 @@ public Play_Event_Sound(Id, client)
 			iSoundNumber[Id] = 0;
 		}
 	}
-	GetArrayString(hPathSound[Id], iSoundNumber[Id], SoundName, 192);	
+	GetArrayString(hPathSound[Id], iSoundNumber[Id], SoundName, 192);
+	if(Game == CSGO)
+	{
+		Format(SoundName, 192, "*%s", SoundName);
+	}
 	if(Id == JOIN) 
 	{
 		if(IsClientInGame(client) && !IsFakeClient(client))
