@@ -300,7 +300,7 @@ Load_Configs_Sounds()
  public OnMapStart() 
  {
 	iNumberRounds = 0;
-	decl String:SoundName[192];
+	decl String:SoundName[192], String:PreCacheSound[192];
 	for(new event = JOIN; event <= KS_15; event++) 
 	{
 		if(bEnableSound[event]) 
@@ -310,8 +310,7 @@ Load_Configs_Sounds()
 				GetArrayString(hPathSound[event], number, SoundName, 192);
 				if(Game == CSGO)
 				{
-					Format(SoundName, 192, "*%s", SoundName);
-					AddToStringTable(FindStringTable("soundprecache"), SoundName);
+					AddToStringTable(FindStringTable("soundprecache"), PreCacheSound);
 				}
 				else
 				{
