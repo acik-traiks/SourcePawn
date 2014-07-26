@@ -300,7 +300,7 @@ Load_Configs_Sounds()
  public OnMapStart() 
  {
 	iNumberRounds = 0;
-	decl String:SoundName[192];
+	decl String:SoundName[192], String:buffer[192]; 
 	for(new event = JOIN; event <= KS_15; event++) 
 	{
 		if(bEnableSound[event]) 
@@ -308,6 +308,8 @@ Load_Configs_Sounds()
 			for(new number = 0; number < iAbacusSounds[event]; number++) 
 			{
 				GetArrayString(hPathSound[event], number, SoundName, 192);
+				Format(buffer, 192, "sound/%s", SoundName); 
+				AddFileToDownloadsTable(buffer);				
 				if(Game == CSGO)
 				{
 					Format(SoundName, 192, "*%s", SoundName);
@@ -317,13 +319,10 @@ Load_Configs_Sounds()
 				{
 					PrecacheSound(SoundName, true);
 				}
-				Format(SoundName, 192, "sound/%s", SoundName); 
-				AddFileToDownloadsTable(SoundName);
 			}
 		}
 		if(bEnableOverlay[event]) 
 		{
-			decl String:buffer[192];
 			if(event != R_END && event != M_END) 
 			{
 				Format(buffer, 192, "%s.vtf", sPathOverlay[0][event]);
