@@ -9,7 +9,7 @@
 public Plugin:myinfo = 
 {
 	name = "Random Quake Sounds by acik",
-	version = "23.07.2014"
+	version = "26.07.2014"
 };
 
 #define NOEVENT -1
@@ -1164,11 +1164,20 @@ stock bool:ThisKnife(String:weapon[])
 	{
 		if(StrEqual(weapon,"knife_default_ct") ||
 		StrEqual(weapon,"knife_default_t") || 
+		StrEqual(weapon,"knife_ct") ||
+		StrEqual(weapon,"knife_t") || 
 		StrEqual(weapon,"knifegg") || 
 		StrEqual(weapon,"knife_flip") || 
 		StrEqual(weapon,"knife_gut") || 
+		StrEqual(weapon,"knife_gg") || 
 		StrEqual(weapon,"knife_karambit") || 
+		StrEqual(weapon,"knife_karam") || 
 		StrEqual(weapon,"bayonet") || 
+		StrEqual(weapon,"knife_tactical") || 
+		StrEqual(weapon,"knife_bayonet") || 
+		StrEqual(weapon,"knife_butterfly") || 
+		StrEqual(weapon,"knife_m9_bay") || 
+		StrEqual(weapon,"knife") || 
 		StrEqual(weapon,"knife_m9_bayonet")) 
 		{
 			return true;
